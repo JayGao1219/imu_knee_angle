@@ -2,11 +2,17 @@ import serial
 import struct
 import time
 
-state = 0
-payload = list()
+##两个imu分开写
+state1 = 0
+payload1 = list()
+
+state2 = 0
+payload2 = list()
 
 # +SPPDATA=1,028,
-header = bytes([0x2B, 0x53, 0x50, 0x50, 0x44, 0x41, 0x54, 0x41, 0x3D, 0x31, 0x2C, 0x30, 0x32, 0x38, 0x2C])
+header1 = bytes([0x2B, 0x53, 0x50, 0x50, 0x44, 0x41, 0x54, 0x41, 0x3D, 0x31, 0x2C, 0x30, 0x32, 0x38, 0x2C])
+# +SPPDATA=2,028,
+header2= bytes([0x2B, 0x53, 0x50, 0x50, 0x44, 0x41, 0x54, 0x41, 0x3D, 0x32, 0x2C, 0x30, 0x32, 0x38, 0x2C])
 
 class DataFrame():
     def __init__(self, buffer):
@@ -18,62 +24,98 @@ class DataFrame():
     def __repr__(self):
         vals = struct.unpack("<6f", self.data)
         vals_str = "{:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
-        invariant_str = "{:02X} {:02X} {:02X}".format(self.invariant[0], self.invariant[1], self.invariant[2])
-        reserved_str = "{:02X} {:02X} {:02X} {:02X}".format(self.reserved[0], self.reserved[1], self.reserved[2], self.reserved[3])
-        return "addr:{:02X}|data: {:s}| {:s} | {:s}".format(self.device_addr, vals_str, invariant_str, reserved_str)
+        return vals_str
 
-def getframe(b):
-    global state
-    global payload
+def getframe1(b):
+    global state1
+    global payload1
 
     b = int.from_bytes(b, byteorder='big')
-    if state == -1 and b == 0x2B:
-        state = 0
+    if state1 == -1 and b == 0x2B:
+        state1 = 0
         return False
-    elif state >= 0 and state < 14:
-        if header[state + 1] == b:
-            state = state + 1
+    elif state1 >= 0 and state1 < 14:
+        if header1[state1 + 1] == b:
+            state1 = state1 + 1
         else:
-            state = -1
+            state1 = -1
         return False
-    elif state >= 14 and state < 45:
-        payload.append(b)
-        state = state + 1
+    elif state1 >= 14 and state1 < 45:
+        payload1.append(b)
+        state1 = state1 + 1
         return False
-    elif state == 45:
-        payload.append(b)
-        state = -1
+    elif state1 == 45:
+        payload1.append(b)
+        state1 = -1
+        return True
+
+def getframe2(b):
+    global state2
+    global payload2
+
+    b = int.from_bytes(b, byteorder='big')
+    if state2 == -1 and b == 0x2B:
+        state2 = 0
+        return False
+    elif state2 >= 0 and state2 < 14:
+        if header2[state2 + 1] == b:
+            state2 = state2 + 1
+        else:
+            state2 = -1
+        return False
+    elif state2 >= 14 and state2 < 45:
+        payload2.append(b)
+        state2 = state2 + 1
+        return False
+    elif state2 == 45:
+        payload2.append(b)
+        state2 = -1
         return True
 
 
-try:
+def data_collection(second=30):
+    global state1
+    global payload1
+    global state2
+    global payload2
     port_name = "/dev/tty.usbserial-A50285BI"
     port_bps = 921600
     serial_port = serial.Serial(port_name, port_bps, timeout=1)
     print(serial_port)
     serial_port.write("AT+SPPSEND=1,6,view=1\r\n".encode(encoding="ascii"))
     time.sleep(5)
-    print("finish")
     serial_port.write("AT+SPPSEND=2,6,view=1\r\n".encode(encoding="ascii"))
 
-    print("command sent")
+    print("开始收集数据")
+    f1=open('../data/imu1.txt','w')
+    f2=open('../data/imu2.txt','w')
+    imu1=[]
+    imu2=[]
+    begin=time.time()
+    
+    while True:
+        data=serial_port.read()
+        cur=time.time()
+        if cur-begin>second:
+            print("数据收集完毕")
+            break
+        if getframe1(data):
+            frame = DataFrame(bytes(payload1))
+            imu1.append((cur,frame))
+            payload1 = []
+        if getframe2(data):
+            frame = DataFrame(bytes(payload2))
+            imu2.append((cur,frame))
+            payload2 = []       
+    
+    f1.write(str(imu1))
+    f2.write(str(imu2))
+    
+    f1.close()
+    f2.close()
 
-    with open("data.hex", "wb") as f:
-
-        for i in range(102400):
-            data = serial_port.read()
-            if getframe(data):
-                frame = DataFrame(bytes(payload))
-                print(frame)
-                payload = []
-            f.write(data)
-
-    print("adsadsads")
-    serial_port.close()
-
-except Exception as e:
-    print("error")
-    print(e)
+if __name__=='__main__':
+    data_collection()
 
 
 

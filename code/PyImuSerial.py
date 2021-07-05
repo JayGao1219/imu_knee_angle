@@ -23,7 +23,7 @@ class DataFrame():
 
     def __repr__(self):
         vals = struct.unpack("<6f", self.data)
-        vals_str = "{:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f} {:8.4f}".format(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
+        vals_str = "{:8.4f},{:8.4f},{:8.4f},{:8.4f},{:8.4f},{:8.4f}".format(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
         return vals_str
 
 def getframe1(b):
@@ -72,6 +72,12 @@ def getframe2(b):
         state2 = -1
         return True
 
+def getval(cur):
+    whole=[]
+    res=cur.split(',')
+    for item in res:
+        whole.append(eval(item))
+    return whole
 
 def data_collection(second=30):
     global state1
@@ -83,7 +89,7 @@ def data_collection(second=30):
     serial_port = serial.Serial(port_name, port_bps, timeout=1)
     print(serial_port)
     serial_port.write("AT+SPPSEND=1,6,view=1\r\n".encode(encoding="ascii"))
-    time.sleep(5)
+    time.sleep(3)
     serial_port.write("AT+SPPSEND=2,6,view=1\r\n".encode(encoding="ascii"))
 
     print("开始收集数据")
@@ -101,10 +107,12 @@ def data_collection(second=30):
             break
         if getframe1(data):
             frame = DataFrame(bytes(payload1))
+            frame = getval(str(frame))
             imu1.append((cur,frame))
             payload1 = []
         if getframe2(data):
             frame = DataFrame(bytes(payload2))
+            frame = getval(str(frame))
             imu2.append((cur,frame))
             payload2 = []       
     
@@ -116,8 +124,3 @@ def data_collection(second=30):
 
 if __name__=='__main__':
     data_collection()
-
-
-
-
-

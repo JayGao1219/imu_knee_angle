@@ -46,7 +46,7 @@ float **getData( char filename[], int NUM )
     }
 
     char    buf[300];
-    char    path[] = "./";
+    char    path[] = "../newdata";
     //char    filename[] = "rawdata.txt";
     char    path_filename[300];
 
@@ -81,9 +81,8 @@ float **getData( char filename[], int NUM )
         */
         for( int i = 0; i < NUM; i++ )
         {
-            fscanf(fp, "%x\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%d\t%d\t%d", 
-            &addr, &time, &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z,
-            &angle_x, &angle_y, &angle_z, &tepo, &hx, &hy, &hz );
+            fscanf(fp, "%f\t%f\t%f\t%f\t%f\t%f", 
+            &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z);
             //printf("\n%x\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%d\n%d\n%d\n",addr, time, acc_x, acc_y, acc_z, vel_x, vel_y, vel_z,
             //angle_x, angle_y, angle_z, tepo, hx, hy, hz);
 
@@ -147,8 +146,8 @@ void get_raw_data()
     /*
     **  获取两个imu的数据,这里只需要角速度
     */
-    char imu_filename_1[] = "rawdata1.txt";
-    char imu_filename_2[] = "rawdata2.txt";
+    char imu_filename_1[] = "imu1.txt";
+    char imu_filename_2[] = "imu2.txt";
 
     imu_raw_data_1 = getData( imu_filename_1, DATASET_NUM );
     imu_raw_data_2 = getData( imu_filename_2, DATASET_NUM );
@@ -409,70 +408,72 @@ float get_angle_acc(Vector3f j1, Vector3f j2,
     return angle_acc;
 }
 
-void test_angle()
-{
-    float angle_acc, angle_gyr, angle_acc_gyr;
-    float sum = 0;         
-    int   cnt = 0;
-    float lambda = 0.01;
 
-    // for test
-    char imu_dataonline1[] = "rawdata_online1.txt";
-    char imu_dataonline2[] = "rawdata_online2.txt";
-    imu_raw_data_online1 = getData( imu_dataonline1, 500 );
-    imu_raw_data_online2 = getData( imu_dataonline2, 500 );
+// void test_angle()
+// {
+//     float angle_acc, angle_gyr, angle_acc_gyr;
+//     float sum = 0;         
+//     int   cnt = 0;
+//     float lambda = 0.01;
+
+//     // for test
+//     char imu_dataonline1[] = "rawdata_online1.txt";
+//     char imu_dataonline2[] = "rawdata_online2.txt";
+//     imu_raw_data_online1 = getData( imu_dataonline1, 500 );
+//     imu_raw_data_online2 = getData( imu_dataonline2, 500 );
     
-    FILE *fp;
-    fp = fopen("data.txt","w");
-    if(fp == NULL)
-    {
-        printf("File cannot open");
-        exit(0);
-    }
+//     FILE *fp;
+//     fp = fopen("data.txt","w");
+//     if(fp == NULL)
+//     {
+//         printf("File cannot open");
+//         exit(0);
+//     }
 
 
-    for( int i = 0; i < 500; i++ )
-    {
-        cnt++;
+//     for( int i = 0; i < 500; i++ )
+//     {
+//         cnt++;
 
-        a1 << imu_raw_data_online1[i][0], imu_raw_data_online1[i][1], imu_raw_data_online1[i][2];
-        a2 << imu_raw_data_online2[i][0], imu_raw_data_online2[i][1], imu_raw_data_online2[i][2];
-        g1 << imu_raw_data_online1[i][3], imu_raw_data_online1[i][4], imu_raw_data_online1[i][5];
-        g2 << imu_raw_data_online2[i][3], imu_raw_data_online2[i][4], imu_raw_data_online2[i][5];
-        g_dot1 << imu_raw_data_online1[i][6], imu_raw_data_online1[i][7], imu_raw_data_online1[i][8];
-        g_dot2 << imu_raw_data_online2[i][6], imu_raw_data_online2[i][7], imu_raw_data_online2[i][8];
+//         a1 << imu_raw_data_online1[i][0], imu_raw_data_online1[i][1], imu_raw_data_online1[i][2];
+//         a2 << imu_raw_data_online2[i][0], imu_raw_data_online2[i][1], imu_raw_data_online2[i][2];
+//         g1 << imu_raw_data_online1[i][3], imu_raw_data_online1[i][4], imu_raw_data_online1[i][5];
+//         g2 << imu_raw_data_online2[i][3], imu_raw_data_online2[i][4], imu_raw_data_online2[i][5];
+//         g_dot1 << imu_raw_data_online1[i][6], imu_raw_data_online1[i][7], imu_raw_data_online1[i][8];
+//         g_dot2 << imu_raw_data_online2[i][6], imu_raw_data_online2[i][7], imu_raw_data_online2[i][8];
 
-        angle_acc = get_angle_acc( j1, j2, a1, a2, g1, g2, g_dot1, g_dot2, o1, o2 );
+//         angle_acc = get_angle_acc( j1, j2, a1, a2, g1, g2, g_dot1, g_dot2, o1, o2 );
 
-        sum = sum + g1 * j1 - g2 * j2;
+//         sum = sum + g1 * j1 - g2 * j2;
 
-        if( cnt > 3 )
-        {
-            /*
-            **  计算基于imu陀螺仪数据所解得的角度
-            */ 
-            angle_gyr = sum * DELTA_T;
+//         if( cnt > 3 )
+//         {
+//             /*
+//             **  计算基于imu陀螺仪数据所解得的角度
+//             */ 
+//             angle_gyr = sum * DELTA_T;
 
-            /*
-            **  互补算法融合两种不同方法算出来的角度
-            */
-            angle_acc_gyr = lambda * angle_acc + (1-lambda) * ( prev_angle_acc_gyr + angle_gyr - prev_angle_gyr );
-            cout << "angle: " << angle_acc_gyr << endl;
-            cnt = 0;
-            /*
-            **  数据写入文档
-            */
-            fprintf(fp,"%f\n", angle_acc_gyr);
-        }
-        /*
-        **  数据更新
-        */
-        prev_angle_acc_gyr = angle_acc_gyr;
-        prev_angle_gyr = angle_gyr;
+//             /*
+//             **  互补算法融合两种不同方法算出来的角度
+//             */ 
+//             angle_acc_gyr = lambda * angle_acc + (1-lambda) * ( prev_angle_acc_gyr + angle_gyr - prev_angle_gyr );
+//             cout << "angle: " << angle_acc_gyr << endl;
+//             cnt = 0;
+//             /*
+//             **  数据写入文档
+//             */ 
+//             fprintf(fp,"%f\n", angle_acc_gyr);
+//         }
+//         /*
+//         **  数据更新
+//         */ 
+//         prev_angle_acc_gyr = angle_acc_gyr;
+//         prev_angle_gyr = angle_gyr;
 
-    }
-    fclose(fp);
-}
+//     }
+//     fclose(fp);
+// }
+
 
 int main()
 {
@@ -487,7 +488,7 @@ int main()
     o1 = o1 - j1 * ( o1.dot(j1) + o2.dot(j2) ) / 2;
     o2 = o2 - j2 * ( o1.dot(j1) + o2.dot(j2) ) / 2;
     
-    test_angle();
+    //test_angle();
     
     return 0;
     

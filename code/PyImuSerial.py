@@ -108,6 +108,7 @@ def data_collection(second=30):
         if getframe1(data):
             frame = DataFrame(bytes(payload1))
             frame = getval(str(frame))
+            print(frame)
             imu1.append((cur,frame))
             payload1 = []
         if getframe2(data):
@@ -123,4 +124,4 @@ def data_collection(second=30):
     f2.close()
 
 if __name__=='__main__':
-    data_collection()
+    data_collection(15)

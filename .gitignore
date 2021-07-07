@@ -3,3 +3,4 @@
 /data/
 /newdata/
 *.swp
+/__pycache__/

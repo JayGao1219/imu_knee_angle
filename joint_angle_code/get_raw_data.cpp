@@ -12,7 +12,7 @@
 /*************************************Global Parameters*************************************/
 VectorXd     params_axis(4, 1);
 VectorXd     params_pos(6, 1);
-Vector3f     j1, j2;
+Vector3f     vj1, vj2;
 Vector3f     o1, o2;
 RowVector3f  g1, g2;
 RowVector3f  g_dot1, g_dot2;
@@ -31,7 +31,7 @@ typedef void (*func_ptr)(const MatrixXd &input, const VectorXd &params, VectorXd
 float **getData( char filename[], int NUM )
 {
     /*
-    **  从IMU传感器获取数据到代码     
+    **  从IMU传感器获取数据到代码   
     */
     float   acc[500][3];
     float   vel[500][3];
@@ -46,7 +46,7 @@ float **getData( char filename[], int NUM )
     }
 
     char    buf[300];
-    char    path[] = "../newdata";
+    char    path[] = "../../newdata/";
     //char    filename[] = "rawdata.txt";
     char    path_filename[300];
 
@@ -64,7 +64,7 @@ float **getData( char filename[], int NUM )
             angle_x, angle_y, angle_z;
 
     int     hx, hy, hz;
-
+    
     if( fp )
     {
         /*
@@ -81,10 +81,11 @@ float **getData( char filename[], int NUM )
         */
         for( int i = 0; i < NUM; i++ )
         {
-            fscanf(fp, "%f\t%f\t%f\t%f\t%f\t%f", 
-            &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z);
-            //printf("\n%x\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%d\n%d\n%d\n",addr, time, acc_x, acc_y, acc_z, vel_x, vel_y, vel_z,
-            //angle_x, angle_y, angle_z, tepo, hx, hy, hz);
+            //fscanf(fp, "%x\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%d\t%d\t%d", 
+            //&addr, &time, &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z,
+            //&angle_x, &angle_y, &angle_z, &tepo, &hx, &hy, &hz );
+
+            fscanf(fp, "%f\t%f\t%f\t%f\t%f\t%f\t", &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z);
 
             acc[i][0] = acc_x;
             acc[i][1] = acc_y;
@@ -117,7 +118,7 @@ float **getData( char filename[], int NUM )
             **  把三个数据融合到一个数据输出
             */
             int k = 0;
-            for( int j = 0; j < 3; j++ )1
+            for( int j = 0; j < 3; j++ )
             {
                 raw_data[i][k] = acc[i][j];
                 raw_data[i][k+3] = vel[i][j]; 
@@ -125,6 +126,14 @@ float **getData( char filename[], int NUM )
                 k++;
                  
             }
+            
+            /*
+            **  打印输出数组
+            */
+            // for( int k = 0; k < DATA_NUM; k++ )
+            // {
+            //     printf("%f\n",raw_data[i][k] );
+            // }  
               
         }  
         return raw_data;
@@ -151,6 +160,19 @@ void get_raw_data()
 
     imu_raw_data_1 = getData( imu_filename_1, DATASET_NUM );
     imu_raw_data_2 = getData( imu_filename_2, DATASET_NUM );
+    
+    /*
+    **  prinf
+    */
+    // for( int i = 0; i < 50; i++ )
+    // {
+    //     for( int j = 0; j < 9; j++ )
+    //     {
+    //         printf("%f ", imu_raw_data_1[i][j] );
+    //     }
+    //     printf("\n");
+    // }
+    
 }
 
 void get_pos(const MatrixXd &input, const VectorXd &params, VectorXd &output)
@@ -212,7 +234,7 @@ void get_axis(const MatrixXd &input, const VectorXd &params, VectorXd &output)
                             pow( (input(i, 4) * s(theta_2) - input(i, 5) * c(phi_2) * s(theta_2)), 2) +
                             pow( (input(i, 5) * c(phi_2) * c(theta_2) - input(i, 3) * s(phi_2)), 2) +
                             pow( (input(i, 3) * c(phi_2) * s(theta_2) - input(i, 4) * c(phi_2) * c(theta_2)), 2) );
-    }
+     }
 }
 
 void get_jacobian(  func_ptr func,
@@ -236,12 +258,14 @@ void get_jacobian(  func_ptr func,
     {
         param0 = params;
         param1 = params;
+        // cout << param0 << "\n" << endl;
         param0(j, 0) -= ITER_STEP;
         param1(j, 0) += ITER_STEP;
         func(input, param0, out0);
         func(input, param1, out1);
        
         output.block(0, j, m, 1) = (out1 - out0) / ( 2 * ITER_STEP );
+        // cout << output << "\n" << endl;
     }
 }
 
@@ -355,8 +379,8 @@ int imu_joint_axis_data_fit()
     
     gauss_newton(get_axis, input, output, params_axis);
     
-    j1 << c(params_axis(2, 0)) * c(params_axis(0, 0)), c(params_axis(2, 0)) * s(params_axis(0, 0)), s(params_axis(2, 0));
-    j2 << c(params_axis(3, 0)) * c(params_axis(1, 0)), c(params_axis(3, 0)) * s(params_axis(1, 0)), s(params_axis(3, 0));
+    vj1 << c(params_axis(2, 0)) * c(params_axis(0, 0)), c(params_axis(2, 0)) * s(params_axis(0, 0)), s(params_axis(2, 0));
+    vj2 << c(params_axis(3, 0)) * c(params_axis(1, 0)), c(params_axis(3, 0)) * s(params_axis(1, 0)), s(params_axis(3, 0));
 
     return 0;
     
@@ -408,85 +432,82 @@ float get_angle_acc(Vector3f j1, Vector3f j2,
     return angle_acc;
 }
 
+void test_angle()
+{
+    float angle_acc = 0, angle_gyr = 0, angle_acc_gyr = 0;
+    float sum = 0;         
+    int   cnt = 0;
+    float lambda = 0.01;
 
-// void test_angle()
-// {
-//     float angle_acc, angle_gyr, angle_acc_gyr;
-//     float sum = 0;         
-//     int   cnt = 0;
-//     float lambda = 0.01;
-
-//     // for test
-//     char imu_dataonline1[] = "rawdata_online1.txt";
-//     char imu_dataonline2[] = "rawdata_online2.txt";
-//     imu_raw_data_online1 = getData( imu_dataonline1, 500 );
-//     imu_raw_data_online2 = getData( imu_dataonline2, 500 );
+    // for test
+    char imu_dataonline1[] = "\\data\\test\\imu1.txt";
+    char imu_dataonline2[] = "\\data\\test\\imu2.txt";
+    imu_raw_data_online1 = getData( imu_dataonline1, 500 );
+    imu_raw_data_online2 = getData( imu_dataonline2, 500 );
     
-//     FILE *fp;
-//     fp = fopen("data.txt","w");
-//     if(fp == NULL)
-//     {
-//         printf("File cannot open");
-//         exit(0);
-//     }
+    FILE *fp;
+    fp = fopen("data.txt","w");
+    if(fp == NULL)
+    {
+        printf("File cannot open");
+        exit(0);
+    }
 
 
-//     for( int i = 0; i < 500; i++ )
-//     {
-//         cnt++;
+    for( int i = 0; i < 500; i++ )
+    {
+        cnt++;
 
-//         a1 << imu_raw_data_online1[i][0], imu_raw_data_online1[i][1], imu_raw_data_online1[i][2];
-//         a2 << imu_raw_data_online2[i][0], imu_raw_data_online2[i][1], imu_raw_data_online2[i][2];
-//         g1 << imu_raw_data_online1[i][3], imu_raw_data_online1[i][4], imu_raw_data_online1[i][5];
-//         g2 << imu_raw_data_online2[i][3], imu_raw_data_online2[i][4], imu_raw_data_online2[i][5];
-//         g_dot1 << imu_raw_data_online1[i][6], imu_raw_data_online1[i][7], imu_raw_data_online1[i][8];
-//         g_dot2 << imu_raw_data_online2[i][6], imu_raw_data_online2[i][7], imu_raw_data_online2[i][8];
+        a1 << imu_raw_data_online1[i][0], imu_raw_data_online1[i][1], imu_raw_data_online1[i][2];
+        a2 << imu_raw_data_online2[i][0], imu_raw_data_online2[i][1], imu_raw_data_online2[i][2];
+        g1 << imu_raw_data_online1[i][3], imu_raw_data_online1[i][4], imu_raw_data_online1[i][5];
+        g2 << imu_raw_data_online2[i][3], imu_raw_data_online2[i][4], imu_raw_data_online2[i][5];
+        g_dot1 << imu_raw_data_online1[i][6], imu_raw_data_online1[i][7], imu_raw_data_online1[i][8];
+        g_dot2 << imu_raw_data_online2[i][6], imu_raw_data_online2[i][7], imu_raw_data_online2[i][8];
 
-//         angle_acc = get_angle_acc( j1, j2, a1, a2, g1, g2, g_dot1, g_dot2, o1, o2 );
+        angle_acc = get_angle_acc( vj1, vj2, a1, a2, g1, g2, g_dot1, g_dot2, o1, o2 );
 
-//         sum = sum + g1 * j1 - g2 * j2;
+        sum = sum + g1 * vj1 - g2 * vj2;
 
-//         if( cnt > 3 )
-//         {
-//             /*
-//             **  计算基于imu陀螺仪数据所解得的角度
-//             */ 
-//             angle_gyr = sum * DELTA_T;
+        if( cnt > 3 )
+        {
+            /*
+            **  计算基于imu陀螺仪数据所解得的角度
+            */ 
+            angle_gyr = sum * DELTA_T;
 
-//             /*
-//             **  互补算法融合两种不同方法算出来的角度
-//             */ 
-//             angle_acc_gyr = lambda * angle_acc + (1-lambda) * ( prev_angle_acc_gyr + angle_gyr - prev_angle_gyr );
-//             cout << "angle: " << angle_acc_gyr << endl;
-//             cnt = 0;
-//             /*
-//             **  数据写入文档
-//             */ 
-//             fprintf(fp,"%f\n", angle_acc_gyr);
-//         }
-//         /*
-//         **  数据更新
-//         */ 
-//         prev_angle_acc_gyr = angle_acc_gyr;
-//         prev_angle_gyr = angle_gyr;
+            /*
+            **  互补算法融合两种不同方法算出来的角度
+            */
+            angle_acc_gyr = lambda * angle_acc + (1-lambda) * ( prev_angle_acc_gyr + angle_gyr - prev_angle_gyr );
+            cout << "angle: " << angle_acc_gyr << endl;
+            cnt = 0;
+            /*
+            **  数据写入文档
+            */
+            fprintf(fp,"%f\n", angle_acc_gyr);
+        }
+        /*
+        **  数据更新
+        */
+        prev_angle_acc_gyr = angle_acc_gyr;
+        prev_angle_gyr = angle_gyr;
 
-//     }
-//     fclose(fp);
-// }
-
+    }
+    fclose(fp);
+}
 
 int main()
 {
     get_raw_data();
     imu_joint_axis_data_fit();
     imu_joint_pos_data_fit();
-
     /*
     **  refers to an arbitrary point along the joint axis
     **  we shift it as close as possible to the sensors by applying:
     */
-    o1 = o1 - j1 * ( o1.dot(j1) + o2.dot(j2) ) / 2;
-    o2 = o2 - j2 * ( o1.dot(j1) + o2.dot(j2) ) / 2;
+    o1 = o1 - vj1 * ( o1.dot(vj1) + o2.dot(vj2) ) / 2;
+    o2 = o2 - vj2 * ( o1.dot(vj1) + o2.dot(vj2) ) / 2;
     
     //test_angle();
     

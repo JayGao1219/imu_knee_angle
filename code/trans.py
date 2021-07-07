@@ -33,11 +33,23 @@ def yaw_pitch_row(data):
         res.append(data[table[i]])
     return res
 
+# def derivative1(data,types,delta):
+#     res=[]
+#     for item in data:
+#         res.append(item)
+#     for i in range(len(data)):
+#         for j in types:
+#             if i>1:
+#                 res[i][j]=(data[i-2][j]-8*data[i-1][j]+8*data[i+1][j]-data[i+2][j])/ (12*delta)
+#             else:
+#                 res[i][j]=(data[i+1][j]*8-data[i+2][j])/ (12*delta)
+
+
 def get_inter(data,begin,end,diff):
-    tot=begin+1
+    tot=begin
     whole=[]
     nx=[]
-    while tot<end-1:
+    while tot<end:
         whole.append([tot])
         nx.append(tot)
         tot+=diff
@@ -57,6 +69,7 @@ def get_inter(data,begin,end,diff):
             whole[j].append(y[j])
 
     #计算角速度,前三个数据点是角速度
+    #whole=derivative1(whole,[2,3,4],diff)
     for i in range(len(whole)-1):
         for j in range(1,4):
             whole[i][j]=(whole[i+1][j]-whole[i][j])/diff
@@ -70,14 +83,14 @@ def get_inter(data,begin,end,diff):
     return res
 
 
-def trans(path,diff=0.1):
+def trans(path,diff=0.02):
     data=[]
     for item in path:
         data.append(get_data(item))
     begin=max(data[0][0][0],data[1][0][0])
-    begin=math.floor(begin)
+    begin=math.ceil(begin)
     end=min(data[0][-1][0],data[1][-1][0])
-    end=math.ceil(end)
+    end=math.floor(end)
    
     for i in range(len(data)):
         cur=get_inter(data[i],begin,end,diff)

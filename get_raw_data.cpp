@@ -6,13 +6,13 @@
 #define c cos
 #define s sin
 #define ITER_STEP       1e-5
-#define ITER_CNT        100 //高斯牛顿迭代次数
+#define ITER_CNT        100
 
 
 /*************************************Global Parameters*************************************/
 VectorXd     params_axis(4, 1);
 VectorXd     params_pos(6, 1);
-Vector3f     vj1, vj2;
+Vector3f     j1, j2;
 Vector3f     o1, o2;
 RowVector3f  g1, g2;
 RowVector3f  g_dot1, g_dot2;
@@ -46,7 +46,7 @@ float **getData( char filename[], int NUM )
     }
 
     char    buf[300];
-    char    path[] = "../../newdata/";
+    char    path[] = "./";
     //char    filename[] = "rawdata.txt";
     char    path_filename[300];
 
@@ -64,7 +64,7 @@ float **getData( char filename[], int NUM )
             angle_x, angle_y, angle_z;
 
     int     hx, hy, hz;
-    
+
     if( fp )
     {
         /*
@@ -81,11 +81,11 @@ float **getData( char filename[], int NUM )
         */
         for( int i = 0; i < NUM; i++ )
         {
-
-            fscanf(fp, "%f\t%f\t%f\t%f\t%f\t%f\t", &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z);
-            // fscanf(fp, "%x\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%d\t%d\t%d", 
-            // &addr, &time, &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z,
-            // &angle_x, &angle_y, &angle_z, &tepo, &hx, &hy, &hz );
+            fscanf(fp, "%x\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%d\t%d\t%d", 
+            &addr, &time, &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z,
+            &angle_x, &angle_y, &angle_z, &tepo, &hx, &hy, &hz );
+            //printf("\n%x\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%d\n%d\n%d\n",addr, time, acc_x, acc_y, acc_z, vel_x, vel_y, vel_z,
+            //angle_x, angle_y, angle_z, tepo, hx, hy, hz);
 
             acc[i][0] = acc_x;
             acc[i][1] = acc_y;
@@ -126,6 +126,14 @@ float **getData( char filename[], int NUM )
                 k++;
                  
             }
+            
+            /*
+            **  打印输出数组
+            */
+            // for( int k = 0; k < DATA_NUM; k++ )
+            // {
+            //     printf("%f\n",raw_data[i][k] );
+            // }  
               
         }  
         return raw_data;
@@ -147,12 +155,23 @@ void get_raw_data()
     /*
     **  获取两个imu的数据,这里只需要角速度
     */
-    char imu_filename_1[] = "gj1.txt";
-    char imu_filename_2[] = "gj2.txt";
+    char imu_filename_1[] = "rawdata1.txt";
+    char imu_filename_2[] = "rawdata2.txt";
 
     imu_raw_data_1 = getData( imu_filename_1, DATASET_NUM );
     imu_raw_data_2 = getData( imu_filename_2, DATASET_NUM );
     
+    /*
+    **  prinf
+    */
+    // for( int i = 0; i < 50; i++ )
+    // {
+    //     for( int j = 0; j < 9; j++ )
+    //     {
+    //         printf("%f ", imu_raw_data_1[i][j] );
+    //     }
+    //     printf("\n");
+    // }
     
 }
 
@@ -215,7 +234,7 @@ void get_axis(const MatrixXd &input, const VectorXd &params, VectorXd &output)
                             pow( (input(i, 4) * s(theta_2) - input(i, 5) * c(phi_2) * s(theta_2)), 2) +
                             pow( (input(i, 5) * c(phi_2) * c(theta_2) - input(i, 3) * s(phi_2)), 2) +
                             pow( (input(i, 3) * c(phi_2) * s(theta_2) - input(i, 4) * c(phi_2) * c(theta_2)), 2) );
-     }
+    }
 }
 
 void get_jacobian(  func_ptr func,
@@ -360,8 +379,8 @@ int imu_joint_axis_data_fit()
     
     gauss_newton(get_axis, input, output, params_axis);
     
-    vj1 << c(params_axis(2, 0)) * c(params_axis(0, 0)), c(params_axis(2, 0)) * s(params_axis(0, 0)), s(params_axis(2, 0));
-    vj2 << c(params_axis(3, 0)) * c(params_axis(1, 0)), c(params_axis(3, 0)) * s(params_axis(1, 0)), s(params_axis(3, 0));
+    j1 << c(params_axis(2, 0)) * c(params_axis(0, 0)), c(params_axis(2, 0)) * s(params_axis(0, 0)), s(params_axis(2, 0));
+    j2 << c(params_axis(3, 0)) * c(params_axis(1, 0)), c(params_axis(3, 0)) * s(params_axis(1, 0)), s(params_axis(3, 0));
 
     return 0;
     
@@ -415,14 +434,14 @@ float get_angle_acc(Vector3f j1, Vector3f j2,
 
 void test_angle()
 {
-    float angle_acc = 0, angle_gyr = 0, angle_acc_gyr = 0;
+    float angle_acc, angle_gyr, angle_acc_gyr;
     float sum = 0;         
     int   cnt = 0;
     float lambda = 0.01;
 
     // for test
-    char imu_dataonline1[] = "gjy1.txt";
-    char imu_dataonline2[] = "gjy2.txt";
+    char imu_dataonline1[] = "rawdata_online1.txt";
+    char imu_dataonline2[] = "rawdata_online2.txt";
     imu_raw_data_online1 = getData( imu_dataonline1, 500 );
     imu_raw_data_online2 = getData( imu_dataonline2, 500 );
     
@@ -446,9 +465,9 @@ void test_angle()
         g_dot1 << imu_raw_data_online1[i][6], imu_raw_data_online1[i][7], imu_raw_data_online1[i][8];
         g_dot2 << imu_raw_data_online2[i][6], imu_raw_data_online2[i][7], imu_raw_data_online2[i][8];
 
-        angle_acc = get_angle_acc( vj1, vj2, a1, a2, g1, g2, g_dot1, g_dot2, o1, o2 );
+        angle_acc = get_angle_acc( j1, j2, a1, a2, g1, g2, g_dot1, g_dot2, o1, o2 );
 
-        sum = sum + g1 * vj1 - g2 * vj2;
+        sum = sum + g1 * j1 - g2 * j2;
 
         if( cnt > 3 )
         {
@@ -483,12 +502,13 @@ int main()
     get_raw_data();
     imu_joint_axis_data_fit();
     imu_joint_pos_data_fit();
+
     /*
     **  refers to an arbitrary point along the joint axis
     **  we shift it as close as possible to the sensors by applying:
     */
-    o1 = o1 - vj1 * ( o1.dot(vj1) + o2.dot(vj2) ) / 2;
-    o2 = o2 - vj2 * ( o1.dot(vj1) + o2.dot(vj2) ) / 2;
+    o1 = o1 - j1 * ( o1.dot(j1) + o2.dot(j2) ) / 2;
+    o2 = o2 - j2 * ( o1.dot(j1) + o2.dot(j2) ) / 2;
     
     test_angle();
     

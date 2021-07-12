@@ -8,6 +8,28 @@
 from scipy import interpolate
 import math
 import time
+import numpy as np
+
+def MAD(dataset,n):
+    median = np.median(dataset)
+    deviations = abs(dataset - median)
+    mad = np.median(deviations)
+    remove_idx = np.where(abs(dataset - median) >  n * mad)
+    cur=[]
+    for item in list(remove_idx[0]):
+        cur.append(dataset[item])
+    print(cur)
+    return list(remove_idx[0])
+
+def three_sigma(dataset, n= 3):
+    mean = np.mean(dataset)
+    sigma = np.std(dataset)
+    remove_idx = np.where(abs(dataset - mean) > n * sigma)
+    cur=[]
+    for item in list(remove_idx[0]):
+        cur.append(dataset[item])
+    print(cur)
+    return list(remove_idx[0])
 
 def get_data(path):
     with open(path) as f:
@@ -45,6 +67,13 @@ def yaw_pitch_row(data):
 #                 res[i][j]=(data[i+1][j]*8-data[i+2][j])/ (12*delta)
 
 
+def removeOutliers(remove_idx,data):
+    res=[]
+    for i in range(len(data)):
+        if i not in remove_idx:
+            res.append(data[i])
+    return res
+
 def get_inter(data,begin,end,diff):
     tot=begin
     whole=[]
@@ -59,7 +88,7 @@ def get_inter(data,begin,end,diff):
         x.append(item[0])
 
     for i in range(len(data[0][1])):
-        #对于每个数据点
+        #对于每个数据点,做线性差值
         cur=[]
         for j in range(len(data)):
             cur.append(data[j][1][i])
@@ -80,10 +109,34 @@ def get_inter(data,begin,end,diff):
     for item in whole:
         res.append(yaw_pitch_row(item))
 
+    #去掉离群点
+    #格式:[acc_x,acc_y,acc_z,pittch,yaw,row]
+    '''
+
+    convert=list(map(list,zip(*res)))
+    remove_idx=[]
+    for i in range(4,6):
+        print(i)
+        
+        #cur=MAD(convert[i],3)
+        cur=three_sigma(convert[i],2)
+        print(cur)
+        print('\n')
+        remove_idx+=cur
+
+    res=removeOutliers(remove_idx,res)
+    '''
+    for i in range(len(res)):
+        for j in range(4,7):
+            if res[i][j]>100:
+                res[i][j]=100
+            if res[i][j]<-100:
+                res[i][j]=-100
+
     return res
 
 
-def trans(path,diff=0.02):
+def trans(path,diff=0.1):
     data=[]
     for item in path:
         data.append(get_data(item))
@@ -98,5 +151,5 @@ def trans(path,diff=0.02):
         store(cur,curpath)
 
 if __name__=='__main__':
-    path=['../data/imu1.txt','../data/imu2.txt']
+    path=['../data/gj1.txt','../data/gj2.txt']
     trans(path)

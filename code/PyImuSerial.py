@@ -79,7 +79,7 @@ def getval(cur):
         whole.append(eval(item))
     return whole
 
-def data_collection(second=30):
+def data_collection(second=30,name='imu'):
     global state1
     global payload1
     global state2
@@ -93,12 +93,15 @@ def data_collection(second=30):
     serial_port.write("AT+SPPSEND=2,6,view=1\r\n".encode(encoding="ascii"))
 
     print("开始收集数据")
-    f1=open('../data/imu1.txt','w')
-    f2=open('../data/imu2.txt','w')
+    begin=time.time()
+
+    path1='../data/%s1.txt'%name
+    path2='../data/%s2.txt'%name
+    f1=open(path1,'w')
+    f2=open(path2,'w')
     imu1=[]
     imu2=[]
-    begin=time.time()
-    
+
     while True:
         data=serial_port.read()
         cur=time.time()
@@ -108,20 +111,54 @@ def data_collection(second=30):
         if getframe1(data):
             frame = DataFrame(bytes(payload1))
             frame = getval(str(frame))
-            print(frame)
             imu1.append((cur,frame))
             payload1 = []
         if getframe2(data):
             frame = DataFrame(bytes(payload2))
             frame = getval(str(frame))
             imu2.append((cur,frame))
-            payload2 = []       
-    
+            payload2 = []    
     f1.write(str(imu1))
     f2.write(str(imu2))
     
     f1.close()
     f2.close()
 
+
+    # cc=b''
+    # while True:
+    #     data=serial_port.read()
+    #     cur=time.time()
+    #     if cur-begin>second:
+    #         print('数据收集完毕')
+    #         break
+    #     cc+=data
+    # with open('data1.hex','wb') as f:
+    #     f.write(cc)
+
+
+    # f=open('data.hex','rb')
+    # dd=f.read()
+    # print(dd)
+    # for item in dd:
+    #     print(item)
+    #     if getframe1(item):
+    #         frame=DataFrame(bytes(payload1))
+    #         frame=getval(str(frame))
+    #         imu1.append(frame)
+    #         payload1=[]
+    #     if getframe2(item):
+    #         frame=DataFrame(bytes(payload2))
+    #         frame=getval(str(frame))
+    #         imu2.append(frame)
+    #         payload2=[]
+    # f1.write(str(imu1))
+    # f2.write(str(imu2))
+    # f1.close()
+    # f2.close()
+
+
+
+
 if __name__=='__main__':
-    data_collection(15)
+    data_collection(20)

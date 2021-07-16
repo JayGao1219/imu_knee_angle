@@ -79,6 +79,14 @@ def getval(cur):
         whole.append(eval(item))
     return whole
 
+def store(data,path):
+    with open(path,'w') as f:
+        f.write("%s\n"%str(time.time()))
+        f.write("格式:[acc_x,acc_y,acc_z,g_x,g_y,g_z]\n")
+        for item in data:
+            f.write("%f\t%f\t%f\t%f\t%f\t%f\n"%(item[0],item[1],item[2],item[3],item[4],item[5]))
+
+
 def data_collection(second=30,name='imu'):
     global state1
     global payload1
@@ -97,8 +105,6 @@ def data_collection(second=30,name='imu'):
 
     path1='../data/%s1.txt'%name
     path2='../data/%s2.txt'%name
-    f1=open(path1,'w')
-    f2=open(path2,'w')
     imu1=[]
     imu2=[]
 
@@ -111,54 +117,21 @@ def data_collection(second=30,name='imu'):
         if getframe1(data):
             frame = DataFrame(bytes(payload1))
             frame = getval(str(frame))
-            imu1.append((cur,frame))
+            imu1.append(frame)
             payload1 = []
         if getframe2(data):
             frame = DataFrame(bytes(payload2))
             frame = getval(str(frame))
-            imu2.append((cur,frame))
-            payload2 = []    
-    f1.write(str(imu1))
-    f2.write(str(imu2))
-    
-    f1.close()
-    f2.close()
+            imu2.append(frame)
+            payload2 = []
 
+    lens=min(len(imu1),len(imu2))
+    imu1=imu1[:lens]
+    imu2=imu2[:lens]
 
-    # cc=b''
-    # while True:
-    #     data=serial_port.read()
-    #     cur=time.time()
-    #     if cur-begin>second:
-    #         print('数据收集完毕')
-    #         break
-    #     cc+=data
-    # with open('data1.hex','wb') as f:
-    #     f.write(cc)
-
-
-    # f=open('data.hex','rb')
-    # dd=f.read()
-    # print(dd)
-    # for item in dd:
-    #     print(item)
-    #     if getframe1(item):
-    #         frame=DataFrame(bytes(payload1))
-    #         frame=getval(str(frame))
-    #         imu1.append(frame)
-    #         payload1=[]
-    #     if getframe2(item):
-    #         frame=DataFrame(bytes(payload2))
-    #         frame=getval(str(frame))
-    #         imu2.append(frame)
-    #         payload2=[]
-    # f1.write(str(imu1))
-    # f2.write(str(imu2))
-    # f1.close()
-    # f2.close()
-
-
+    store(imu1,path1)
+    store(imu2,path2)
 
 
 if __name__=='__main__':
-    data_collection(20)
+    data_collection(10,name='90_1')

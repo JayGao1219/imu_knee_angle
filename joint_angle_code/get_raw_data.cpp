@@ -1,7 +1,7 @@
 #include"get_raw_data.h"
 
-#define DELTA_T         0.1 //s
-#define DATASET_NUM     50 //采集数据数量
+#define DELTA_T         0.01 //s
+#define DATASET_NUM     500 //采集数据数量
 #define DATA_NUM        9 //每个数据集里的数据个数
 #define c cos
 #define s sin
@@ -46,7 +46,7 @@ float **getData( char filename[], int NUM )
     }
 
     char    buf[300];
-    char    path[] = "../../newdata/";
+    char    path[] = "../../data/";
     //char    filename[] = "rawdata.txt";
     char    path_filename[300];
 
@@ -82,7 +82,7 @@ float **getData( char filename[], int NUM )
         for( int i = 0; i < NUM; i++ )
         {
 
-            fscanf(fp, "%f\t%f\t%f\t%f\t%f\t%f\t", &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z);
+            fscanf(fp, "%f\t%f\t%f\t%f\t%f\t%f", &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z);
             // fscanf(fp, "%x\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%d\t%d\t%d", 
             // &addr, &time, &acc_x, &acc_y, &acc_z, &vel_x, &vel_y, &vel_z,
             // &angle_x, &angle_y, &angle_z, &tepo, &hx, &hy, &hz );
@@ -104,13 +104,21 @@ float **getData( char filename[], int NUM )
         {
             for( int j = 0; j < 3; j++ )
             {
-                if( i > 1 )
+                if( i > 1 and i<NUM-2)
                 {
                     vel_dot[i][j] = ( vel[i-2][j] - 8 * vel[i-1][j] + 8 * vel[i+1][j] - vel[i+2][j] ) / 12 * DELTA_T;
                 }
+                else if(i==1 or i == NUM-2)
+                {
+                    vel_dot[i][j] = ( vel[i+1][j] - vel[i-1][j] ) / 2 * DELTA_T;
+                }
+                else if(i==0)
+                {
+                    vel_dot[i][j] = ( vel[i+1][j] - vel[i][j] ) / DELTA_T;
+                }
                 else
                 {
-                    vel_dot[i][j] = ( 8 * vel[i+1][j] - vel[i+2][j] ) / 12 * DELTA_T;
+                    vel_dot[i][j] = ( vel[i][j] - vel[i-1][j] ) / DELTA_T;
                 }
             }
             
@@ -147,8 +155,8 @@ void get_raw_data()
     /*
     **  获取两个imu的数据,这里只需要角速度
     */
-    char imu_filename_1[] = "gj1.txt";
-    char imu_filename_2[] = "gj2.txt";
+    char imu_filename_1[] = "90_11.txt";
+    char imu_filename_2[] = "90_12.txt";
 
     imu_raw_data_1 = getData( imu_filename_1, DATASET_NUM );
     imu_raw_data_2 = getData( imu_filename_2, DATASET_NUM );
@@ -421,8 +429,8 @@ void test_angle()
     float lambda = 0.01;
 
     // for test
-    char imu_dataonline1[] = "gjy1.txt";
-    char imu_dataonline2[] = "gjy2.txt";
+    char imu_dataonline1[] = "90_11.txt";
+    char imu_dataonline2[] = "90_12.txt";
     imu_raw_data_online1 = getData( imu_dataonline1, 500 );
     imu_raw_data_online2 = getData( imu_dataonline2, 500 );
     
@@ -461,7 +469,7 @@ void test_angle()
             **  互补算法融合两种不同方法算出来的角度
             */
             angle_acc_gyr = lambda * angle_acc + (1-lambda) * ( prev_angle_acc_gyr + angle_gyr - prev_angle_gyr );
-            cout << "angle: " << angle_acc_gyr << endl;
+            cout << "angle: " << angle_acc << endl;
             cnt = 0;
             /*
             **  数据写入文档

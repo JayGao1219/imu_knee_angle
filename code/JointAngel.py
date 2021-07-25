@@ -77,14 +77,14 @@ def get_angular_acceleration(data,diff,index):
 		for j in range(len(index)):
 			res=0.0
 			if i >1 and i<len(data)-2:
-				res=(data[i-2][index[j]]-8*data[i-1][index[j]]+8*data[i+1][index[j]]-data[i+2][index[j]])/12*diff
+				res=(data[i-2][index[j]]-8*data[i-1][index[j]]+8*data[i+1][index[j]]-data[i+2][index[j]])/(12*diff)
 			elif i==1 or i==len(data)-2:
-				res=(data[i+1][index[j]]-data[i-1][index[j]])/2*diff
+				res=(data[i+1][index[j]]-data[i-1][index[j]])/(2*diff)
 			elif i==0:
 				res=(data[i+1][index[j]]-data[i][index[j]])/diff
 			else:
 				res=(data[i][index[j]]-data[i-1][index[j]])/diff
-			#res=float('%.6f'%(res))
+			res=float('%.6f'%(res))
 			cur.append(res)
 		vel_dot.append(cur)
 	for i in range(len(data)):
@@ -93,10 +93,10 @@ def get_angular_acceleration(data,diff,index):
 	return data
 
 def c(tt):
-	return math.cos(tt*math.pi/180)
+	return math.cos(tt)
 
 def s(tt):
-	return math.sin(tt*math.pi/180)
+	return math.sin(tt)
 
 def sqrt(tt):
 	return math.sqrt(tt)
@@ -116,7 +116,7 @@ def get_pos(input_data,params,output):
 	for i in range(m):
 		acc_joint1_x = input_data[i][4] * ( input_data[i][3] * o1y - input_data[i][4] * o1x ) - input_data[i][5] * ( input_data[i][5] * o1x - input_data[i][3] * o1z ) + ( input_data[i][7] * o1z - input_data[i][8] * o1y )
 		acc_joint1_y = input_data[i][5] * ( input_data[i][4] * o1z - input_data[i][5] * o1y ) - input_data[i][3] * ( input_data[i][3] * o1y - input_data[i][4] * o1x ) + ( input_data[i][8] * o1x - input_data[i][6] * o1z )
-		acc_joint1_z = input_data[i][3] * ( input_data[i][5] * o1x - input_data[i][3] * o1z ) - input_data[i][4] * ( input_data[i][4] * o1z - input_data[i][5] * o1y ) + ( input_data[i][6] * o1y - input_data[i][7]* o1x )
+		acc_joint1_z = input_data[i][3] * ( input_data[i][5] * o1x - input_data[i][3] * o1z ) - input_data[i][4] * ( input_data[i][4] * o1z - input_data[i][5] * o1y ) + ( input_data[i][6] * o1y - input_data[i][7] * o1x )
 
 		acc_joint2_x = input_data[i][13] * ( input_data[i][12] * o2y - input_data[i][13] * o2x ) - input_data[i][14] * ( input_data[i][14] * o2x - input_data[i][12] * o2z ) + ( input_data[i][16] * o2z - input_data[i][17] * o2y )
 		acc_joint2_y = input_data[i][14] * ( input_data[i][13] * o2z - input_data[i][14] * o2y ) - input_data[i][12] * ( input_data[i][12] * o2y - input_data[i][13] * o2x ) + ( input_data[i][17] * o2x - input_data[i][15] * o2z )
@@ -135,8 +135,6 @@ def get_axis(input_data,params,output):
 	theta_2=params[1][0]
 	phi_1=params[2][0]
 	phi_2=params[3][0]
-	# print("get_axis")
-	# print(params)
 
 	m=input_data.shape[0]
 	for i in range(m):
@@ -149,7 +147,6 @@ def get_axis(input_data,params,output):
 			pow(input_data[i][5]*c(phi_2)*c(theta_2)- input_data[i][3]*s(phi_2) )+\
 			pow(input_data[i][3]*c(phi_2)*s(theta_2)- input_data[i][4]*c(phi_2)*c(theta_2) ))
 
-	#print(output)
 	return output
 
 def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2):
@@ -171,22 +168,23 @@ def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2):
 	q2=0.0
 	angle_acc=0.0
 
-	c=np.array([[1.0],[0.0],[0.0]])
-	t1=np.dot(o1.transpose(),j1)[0][0]
-	t2=np.dot(o2.transpose(),j2)[0][0]
-	tt=(t1+t2)/2
-	o1-=j1*tt
-	o2-=j2*tt
+	c=np.array([[1.0],[2.0],[3.0]])
+
+	# t1=np.dot(o1.transpose(),j1)[0][0]
+	# t2=np.dot(o2.transpose(),j2)[0][0]
+	# tt=(t1+t2)/2
+	# o1-=j1*tt
+	# o2-=j2*tt
 
 	p1=np.cross(g1,o1.transpose())
 	p2=np.cross(g1,p1)
 	p3=np.cross(g_dot1,o1.transpose())
-	a1_dot=a1-(p1+p3)
+	a1_dot=a1-(p2+p3)
 
-	p1=np.cross(g2,o2.transpose())
-	p2=np.cross(g2,p1)
-	p3=np.cross(g_dot2,o2.transpose())
-	a2_dot=a2-(p1+p2)
+	p_1=np.cross(g2,o2.transpose())
+	p_2=np.cross(g2,p_1)
+	p_3=np.cross(g_dot2,o2.transpose())
+	a2_dot=a2-(p_2+p_3)
 
 	x1=np.cross(j1.transpose(),c.transpose())
 	y1=np.cross(j1.transpose(),x1)
@@ -202,12 +200,7 @@ def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2):
 	acc2=np.array([[q1],[q2]])
 
 	angle_acc=math.acos(np.dot(acc1.transpose(),acc2)[0][0]/(np.linalg.norm(acc1)*np.linalg.norm(acc2)))
-
-	return angle_acc*180/math.pi
-
-
-
-
+	return math.degrees(angle_acc)
 
 class joint_angel():
 	def __init__(self,data):
@@ -221,22 +214,15 @@ class joint_angel():
 		self.vj2=np.zeros((3,1))
 		self.o1=np.zeros((3,1))
 		self.o2=np.zeros((3,1))
-		self.g1=np.zeros((1,3))
-		self.g2=np.zeros((1,3))
-		self.g_dot1=np.zeros((1,3))
-		self.g_dot2=np.zeros((1,3))
-		self.a1=np.zeros((1,3))
-		self.a2=np.zeros((1,3))
 		self.imu_data_1=np.array(data[0])
 		self.imu_data_2=np.array(data[1])
-		self.prev_angle_gyr=0.0
-		self.prev_angle_acc_gyr=0.0
 		self.sname=''
 		self.times=0
 
 	def get_jacobian(self,func,input_data,params,output):
 		m=input_data.shape[0]
 		n=params.shape[0]
+
 		out0=np.zeros((m,1))
 		out1=np.zeros((m,1))
 		param0=np.zeros((n,1))
@@ -250,6 +236,7 @@ class joint_angel():
 			
 			out1 = func(input_data,param1,out1)
 			out0 = func(input_data,param0,out0)
+
 			output[0:m,j:j+1]=(out1-out0)/(2*self.ITER_STEP)
 
 		return output
@@ -268,7 +255,9 @@ class joint_angel():
 		pre_mse=0.0
 		mse=0.0
 
-		for i in range(self.ITER_CNT):
+		result=[]
+
+		for i in range(self.ITER_CNT):			
 			mse=0.0
 			tmp=func(input_data,params,tmp)
 			r=output-tmp
@@ -281,20 +270,25 @@ class joint_angel():
 				break
 
 			pre_mse=mse
-			#delta= np.dot(np.dot(np.linalg.pinv(np.dot(jmat.transpose(),jmat)),jmat.transpose),r)
 			a=np.dot(jmat.transpose(),jmat)
-			#print(a)
 
 			b=np.linalg.pinv(a)
 			c=np.dot(b,jmat.transpose())
 			d=np.dot(c,r)
-
-			params+=d
+			result.append((mse,params.copy()))
 
 			print("i=%d, mes:%lf"%(i,mse))
 
-		print(params)
-		return params
+			params+=d
+
+		pre=params
+		minn=10000.0
+		for item in result:
+			if item[0]<minn:
+				pre=item[1]
+				minn=item[0]
+
+		return pre
 
 	def joint_pos(self):
 		input_data=np.zeros((self.DATASET_NUM,18))
@@ -317,6 +311,8 @@ class joint_angel():
 
 		self.o1=np.array([[self.params_pos[0][0]],[self.params_pos[1][0]],[self.params_pos[2][0]]])
 		self.o2=np.array([[self.params_pos[3][0]],[self.params_pos[4][0]],[self.params_pos[5][0]]])
+
+		print(self.o1,self.o2)
 
 	def joint_axis(self):
 		#计算关节轴向数据输入接口
@@ -344,47 +340,63 @@ class joint_angel():
 		self.vj2=np.array([[c(self.params_axis[3][0])*c(self.params_axis[1][0])],\
 			[c(self.params_axis[3][0])*s(self.params_axis[1][0])],\
 			[s(self.params_axis[3][0])]])
+		##做一个符号匹配
+		flag=False
+		if self.vj1[0][0]*self.vj2[0][0]<1e-10:
+			flag=True
+		if flag:
+			self.vj1=-self.vj1
+		print('j1,j2:')
+		print(self.vj1)
+		print(self.vj2)
 
 	def test_angel(self):
 		angle_acc = 0.0
 		angle_gyr = 0.0
 		angle_acc_gyr = 0.0
+		prev_angle_gyr=0.0
+		prev_angle_acc_gyr=0.0
 
 		SUM=0.0
 		cnt=0
-		LAMBDA=0.9
+		LAMBDA=0.01
 
 		whole=[]
 
 		for i in range(self.DATASET_NUM):
 			cnt+=1
-			self.a1=np.array([[self.imu_data_1[i][0],self.imu_data_1[i][1],self.imu_data_1[i][2]]])
-			self.a2=np.array([[self.imu_data_2[i][0],self.imu_data_2[i][1],self.imu_data_2[i][2]]])
-			self.g1=np.array([[self.imu_data_1[i][3],self.imu_data_1[i][4],self.imu_data_1[i][5]]])
-			self.g2=np.array([[self.imu_data_2[i][3],self.imu_data_2[i][4],self.imu_data_2[i][5]]])
-			self.g_dot1=np.array([[self.imu_data_1[i][6],self.imu_data_1[i][7],self.imu_data_1[i][8]]])
-			self.g_dot2=np.array([[self.imu_data_2[i][6],self.imu_data_2[i][7],self.imu_data_2[i][8]]])
+			a1=np.array([[self.imu_data_1[i][0],self.imu_data_1[i][1],self.imu_data_1[i][2]]])
+			a2=np.array([[self.imu_data_2[i][0],self.imu_data_2[i][1],self.imu_data_2[i][2]]])
+			g1=np.array([[self.imu_data_1[i][3],self.imu_data_1[i][4],self.imu_data_1[i][5]]])
+			g2=np.array([[self.imu_data_2[i][3],self.imu_data_2[i][4],self.imu_data_2[i][5]]])
+			g_dot1=np.array([[self.imu_data_1[i][6],self.imu_data_1[i][7],self.imu_data_1[i][8]]])
+			g_dot2=np.array([[self.imu_data_2[i][6],self.imu_data_2[i][7],self.imu_data_2[i][8]]])
 
-			angle_acc=get_angel_acc(self.vj1,self.vj2,self.a1,self.a2,self.g1,self.g2,self.g_dot1,self.g_dot2,self.o1,self.o2)
+			angle_acc=get_angel_acc(self.vj1,self.vj2,a1,a2,g1,g2,g_dot1,g_dot2,self.o1,self.o2)
 
-			SUM=SUM+np.dot(self.g1,self.vj1)-np.dot(self.g2,self.vj2)
+			
+			aaa=np.dot(g1,self.vj1)-np.dot(g2,self.vj2)
+			SUM=SUM+aaa[0][0]
 
 			if cnt>3:
 				cur={}
 				angle_gyr=SUM*self.DELTA_T
-				angle_gyr=angle_gyr[0][0]
-				angle_acc_gyr=LAMBDA*angle_acc+(1- LAMBDA )*(self.prev_angle_gyr+angle_gyr-self.prev_angle_gyr )
+				angle_acc_gyr=LAMBDA*angle_acc+(1- LAMBDA )*(prev_angle_acc_gyr+angle_gyr-prev_angle_gyr )
 				print("angle_acc_gyr:",angle_acc_gyr)
 				print("angle_acc:",angle_acc)
-				print("angle_gyr",angle_gyr)
-				print('\n')
+				# print("angle_gyr",angle_gyr)
 				cur["angle_acc_gyr"]=angle_acc_gyr
 				cur['angle_acc']=angle_acc
 				cur["angle_gyr"]=angle_gyr
 				whole.append(cur)
+			
 				
-			self.prev_angle_acc_gyr=angle_acc_gyr
-			self.prev_angle_gyr=angle_gyr
+			if cnt<=3:
+				prev_angle_acc_gyr=angle_acc
+				prev_angle_gyr=angle_gyr
+			else:
+				prev_angle_acc_gyr=angle_acc_gyr
+				prev_angle_gyr=angle_gyr
 
 		with open(self.sname,'w') as f:
 			f.write(str(whole))
@@ -427,16 +439,13 @@ def main(an,tttt):
 	d2=d2[:lens]
 	data=[d1,d2]
 
-	#求导，得到角速度的加速度
 	for i in range(len(data)):
 		data[i]=get_angular_acceleration(data[i],AngelConfing.diff,[3,4,5])
-
-	#当有多个imu数据时，取前两个
-	data=data[:2]
 
 	a=joint_angel(data)
 	a.joint_axis()
 	a.joint_pos()
+
 	t1=np.dot(a.o1.transpose(),a.vj1)[0][0]
 	t2=np.dot(a.o2.transpose(),a.vj2)[0][0]
 	tt=(t1+t2)/2
@@ -450,4 +459,3 @@ if __name__ == '__main__':
 	for i in [0,45,90,135,180]:
 		for j in [1,2,3]:
 			main(i,j)
-	main()

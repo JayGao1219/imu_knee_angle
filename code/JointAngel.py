@@ -170,12 +170,6 @@ def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2):
 
 	c=np.array([[1.0],[2.0],[3.0]])
 
-	# t1=np.dot(o1.transpose(),j1)[0][0]
-	# t2=np.dot(o2.transpose(),j2)[0][0]
-	# tt=(t1+t2)/2
-	# o1-=j1*tt
-	# o2-=j2*tt
-
 	p1=np.cross(g1,o1.transpose())
 	p2=np.cross(g1,p1)
 	p3=np.cross(g_dot1,o1.transpose())

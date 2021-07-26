@@ -117,17 +117,17 @@ def data_collection(second=30,name='imu'):
         if getframe1(data):
             frame = DataFrame(bytes(payload1))
             frame = getval(str(frame))
-            imu1.append(frame)
+            imu1.append((cur,frame))
             payload1 = []
         if getframe2(data):
             frame = DataFrame(bytes(payload2))
             frame = getval(str(frame))
-            imu2.append(frame)
+            imu2.append((cur,frame))
             payload2 = []
 
-    lens=min(len(imu1),len(imu2))
-    imu1=imu1[:lens]
-    imu2=imu2[:lens]
+    # lens=min(len(imu1),len(imu2))
+    # imu1=imu1[:lens]
+    # imu2=imu2[:lens]
 
     store(imu1,path1)
     store(imu2,path2)

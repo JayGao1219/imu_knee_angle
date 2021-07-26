@@ -10,9 +10,11 @@ state2 = 0
 payload2 = list()
 
 # +SPPDATA=1,028,
-header1 = bytes([0x2B, 0x53, 0x50, 0x50, 0x44, 0x41, 0x54, 0x41, 0x3D, 0x31, 0x2C, 0x30, 0x32, 0x38, 0x2C])
+header1 = bytes([0x2B, 0x53, 0x50, 0x50, 0x44, 0x41, 0x54, \
+    0x41, 0x3D, 0x31, 0x2C, 0x30, 0x32, 0x38, 0x2C])
 # +SPPDATA=2,028,
-header2= bytes([0x2B, 0x53, 0x50, 0x50, 0x44, 0x41, 0x54, 0x41, 0x3D, 0x32, 0x2C, 0x30, 0x32, 0x38, 0x2C])
+header2= bytes([0x2B, 0x53, 0x50, 0x50, 0x44, 0x41, 0x54,\
+ 0x41, 0x3D, 0x32, 0x2C, 0x30, 0x32, 0x38, 0x2C])
 
 class DataFrame():
     def __init__(self, buffer):
@@ -23,7 +25,8 @@ class DataFrame():
 
     def __repr__(self):
         vals = struct.unpack("<6f", self.data)
-        vals_str = "{:8.4f},{:8.4f},{:8.4f},{:8.4f},{:8.4f},{:8.4f}".format(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
+        vals_str = "{:8.4f},{:8.4f},{:8.4f},{:8.4f},{:8.4f},{:8.4f}"\
+        .format(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
         return vals_str
 
 def getframe1(b):
@@ -81,10 +84,9 @@ def getval(cur):
 
 def store(data,path):
     with open(path,'w') as f:
-        f.write("%s\n"%str(time.time()))
-        f.write("格式:[acc_x,acc_y,acc_z,g_x,g_y,g_z]\n")
         for item in data:
-            f.write("%f\t%f\t%f\t%f\t%f\t%f\n"%(item[0],item[1],item[2],item[3],item[4],item[5]))
+            f.write("%f\t%f\t%f\t%f\t%f\t%f\t%f\n"%\
+                (item[0],item[1][0],item[1][1],item[1][2],item[1][3],item[1][4],item[1][5]))
 
 
 def data_collection(second=30,name='imu'):
@@ -103,8 +105,8 @@ def data_collection(second=30,name='imu'):
     print("开始收集数据")
     begin=time.time()
 
-    path1='../data/%s1.txt'%name
-    path2='../data/%s2.txt'%name
+    path1='../data/%d_1.txt'%(name)
+    path2='../data/%d_2.txt'%(name)
     imu1=[]
     imu2=[]
 
@@ -124,10 +126,6 @@ def data_collection(second=30,name='imu'):
             frame = getval(str(frame))
             imu2.append((cur,frame))
             payload2 = []
-
-    # lens=min(len(imu1),len(imu2))
-    # imu1=imu1[:lens]
-    # imu2=imu2[:lens]
 
     store(imu1,path1)
     store(imu2,path2)

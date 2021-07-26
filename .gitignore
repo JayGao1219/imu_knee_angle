@@ -1,6 +1,5 @@
 .DS_Store
 *.hex
-/data/
 /newdata/
 *.swp
 /__pycache__/

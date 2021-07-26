@@ -9,6 +9,9 @@ from scipy import interpolate
 import math
 import time
 import numpy as np
+import os
+
+from config import AngelConfing
 
 def MAD(dataset,n):
     median = np.median(dataset)
@@ -36,36 +39,13 @@ def get_data(path):
         data=eval(f.read())
     return data
 
-def store(data,path):
+def store(data,path,info):
     with open(path,'w') as f:
         f.write("%s\n"%str(time.time()))
-        f.write("格式:[acc_x,acc_y,acc_z,pittch,yaw,row]\n")
+        f.write("%s\n"%str(info))
         for item in data:
-            f.write("%f\t%f\t%f\t%f\t%f\t%f\n"%(item[1],item[2],item[3],item[4],item[5],item[6]))
-
-
-def yaw_pitch_row(data):
-    '''
-    原始格式:[time,yaw,pittch,row,acc_x,acc_y,acc_z]
-    转换格式:[time,acc_x,acc_y,acc_z,pittch,yaw,row]
-    '''
-    table={0:0,1:4,2:5,3:6,4:2,5:1,6:3}
-    res=[]
-    for i in range(len(data)):
-        res.append(data[table[i]])
-    return res
-
-# def derivative1(data,types,delta):
-#     res=[]
-#     for item in data:
-#         res.append(item)
-#     for i in range(len(data)):
-#         for j in types:
-#             if i>1:
-#                 res[i][j]=(data[i-2][j]-8*data[i-1][j]+8*data[i+1][j]-data[i+2][j])/ (12*delta)
-#             else:
-#                 res[i][j]=(data[i+1][j]*8-data[i+2][j])/ (12*delta)
-
+            f.write("%f\t%f\t%f\t%f\t%f\t%f\n"%\
+                (item[1],item[2],item[3],item[4],item[5],item[6]))
 
 def removeOutliers(remove_idx,data):
     res=[]
@@ -76,14 +56,14 @@ def removeOutliers(remove_idx,data):
 
 def get_inter(data,begin,end,diff):
     tot=begin
-    whole=[]
-    nx=[]
+    whole=[] #差值后的数据
+    nx=[] #新的 x
     while tot<end:
         whole.append([tot])
         nx.append(tot)
         tot+=diff
-        pass
-    x=[]
+
+    x=[] #旧的 x
     for item in data:
         x.append(item[0])
 
@@ -97,22 +77,8 @@ def get_inter(data,begin,end,diff):
         for j in range(len(whole)):
             whole[j].append(y[j])
 
-    #计算角速度,前三个数据点是角速度
-    #whole=derivative1(whole,[2,3,4],diff)
-    for i in range(len(whole)-1):
-        for j in range(1,4):
-            whole[i][j]=(whole[i+1][j]-whole[i][j])/diff
-    del whole[-1]
-
-    #根据串口数据调试，让yaw,pittch,roll与x,y,z轴对应
-    res=[]
-    for item in whole:
-        res.append(yaw_pitch_row(item))
-
     #去掉离群点
-    #格式:[acc_x,acc_y,acc_z,pittch,yaw,row]
     '''
-
     convert=list(map(list,zip(*res)))
     remove_idx=[]
     for i in range(4,6):
@@ -125,31 +91,47 @@ def get_inter(data,begin,end,diff):
         remove_idx+=cur
 
     res=removeOutliers(remove_idx,res)
-    '''
+    
     for i in range(len(res)):
         for j in range(4,7):
             if res[i][j]>100:
                 res[i][j]=100
             if res[i][j]<-100:
                 res[i][j]=-100
+    '''
 
-    return res
+    return whole
 
 
-def trans(path,diff=0.1):
-    data=[]
-    for item in path:
-        data.append(get_data(item))
-    begin=max(data[0][0][0],data[1][0][0])
-    begin=math.ceil(begin)
-    end=min(data[0][-1][0],data[1][-1][0])
-    end=math.floor(end)
+def trans(path='',diff=0.0):
+    root_path='../data/'
+    if diff==0.0: 
+        # diff可以自己指定，如果没指定，就使用默认的
+        diff=AngelConfing.diff
+    if len(path)==0:
+        # 如果不指定，默认将'../data' 下的所有文件转换到新的文件夹下
+        all_path=[]
+        dirs=os.listdir(root_path)
+        if '.DS_Store' in dirs:
+            dirs.remove('.DS_Store')
+    else:
+        all_path=[path]
+
+    for item in all_path:
+        cur_data=get_data(root_path+item)
+        begin=math.ceil(data[0][0])
+        end=math.floor(data[-1][0])
+        cur_data=get_inter(cur_data,begin,end,diff)
+        cur_path=item.replace('data','newdata',1)
+
+        store(cur_data,cur_path,[begin,end,diff])
+        # data.append(get_data(root_path + item))
+
+
+    ##begin 和 end 不如放到 JointAngel去判断
+    #### 记得去改一下，或者再写一个外包函数去做判断，在JointAngel的基础上
    
-    for i in range(len(data)):
-        cur=get_inter(data[i],begin,end,diff)
-        curpath=path[i].replace('data','newdata',1)
-        store(cur,curpath)
 
 if __name__=='__main__':
-    path=['../data/gj1.txt','../data/gj2.txt']
-    trans(path)
+    # path=['../data/gj1.txt','../data/gj2.txt']
+    trans()

@@ -77,6 +77,8 @@ def get_inter(data,begin,end,diff):
         for j in range(len(whole)):
             whole[j].append(y[j])
 
+    return whole
+
     #去掉离群点
     '''
     convert=list(map(list,zip(*res)))
@@ -99,10 +101,7 @@ def get_inter(data,begin,end,diff):
             if res[i][j]<-100:
                 res[i][j]=-100
     '''
-
-    return whole
-
-
+    
 def trans(path='',diff=0.0):
     root_path='../data/'
     if diff==0.0: 

@@ -193,11 +193,12 @@ def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2):
 	acc1=np.array([[p1],[p2]])
 	acc2=np.array([[q1],[q2]])
 
-	angle_acc=math.acos(np.dot(acc1.transpose(),acc2)[0][0]/(np.linalg.norm(acc1)*np.linalg.norm(acc2)))
+	angle_acc=math.acos(np.dot(acc1.transpose(),acc2)[0][0]\
+		/(np.linalg.norm(acc1)*np.linalg.norm(acc2)))
 	return math.degrees(angle_acc)
 
 class joint_angel():
-	def __init__(self,data):
+	def __init__(self,data,test_data):
 		self.DATASET_NUM=len(data[0])
 		self.DELTA_T=AngelConfing.diff
 		self.ITER_STEP=AngelConfing.ITER_STEP
@@ -208,10 +209,13 @@ class joint_angel():
 		self.vj2=np.zeros((3,1))
 		self.o1=np.zeros((3,1))
 		self.o2=np.zeros((3,1))
+		self.sname=''
 		self.imu_data_1=np.array(data[0])
 		self.imu_data_2=np.array(data[1])
-		self.sname=''
-		self.times=0
+
+		self.imu_test_data_1=np.array(test_data[0])
+		self.imu_test_data_2=np.array(test_data[1])
+		self.TEST_DATASET_NUM=len(test_data[0])
 
 	def get_jacobian(self,func,input_data,params,output):
 		m=input_data.shape[0]
@@ -357,14 +361,14 @@ class joint_angel():
 
 		whole=[]
 
-		for i in range(self.DATASET_NUM):
+		for i in range(self.TEST_DATASET_NUM):
 			cnt+=1
-			a1=np.array([[self.imu_data_1[i][0],self.imu_data_1[i][1],self.imu_data_1[i][2]]])
-			a2=np.array([[self.imu_data_2[i][0],self.imu_data_2[i][1],self.imu_data_2[i][2]]])
-			g1=np.array([[self.imu_data_1[i][3],self.imu_data_1[i][4],self.imu_data_1[i][5]]])
-			g2=np.array([[self.imu_data_2[i][3],self.imu_data_2[i][4],self.imu_data_2[i][5]]])
-			g_dot1=np.array([[self.imu_data_1[i][6],self.imu_data_1[i][7],self.imu_data_1[i][8]]])
-			g_dot2=np.array([[self.imu_data_2[i][6],self.imu_data_2[i][7],self.imu_data_2[i][8]]])
+			a1=np.array([[self.imu_test_data_1[i][0],self.imu_test_data_1[i][1],self.imu_test_data_1[i][2]]])
+			a2=np.array([[self.imu_test_data_2[i][0],self.imu_test_data_2[i][1],self.imu_test_data_2[i][2]]])
+			g1=np.array([[self.imu_test_data_1[i][3],self.imu_test_data_1[i][4],self.imu_test_data_1[i][5]]])
+			g2=np.array([[self.imu_test_data_2[i][3],self.imu_test_data_2[i][4],self.imu_test_data_2[i][5]]])
+			g_dot1=np.array([[self.imu_test_data_1[i][6],self.imu_test_data_1[i][7],self.imu_test_data_1[i][8]]])
+			g_dot2=np.array([[self.imu_test_data_2[i][6],self.imu_test_data_2[i][7],self.imu_test_data_2[i][8]]])
 
 			angle_acc=get_angel_acc(self.vj1,self.vj2,a1,a2,g1,g2,g_dot1,g_dot2,self.o1,self.o2)
 
@@ -400,43 +404,56 @@ def get_data(path):
 	with open(path) as f:
 		context=f.read()
 		context=context.split('\n')
-		context=context[2:]
 		for item in context:
 			if len(item)==0:
 				continue
 			cur=[]
 			item=item.split('\t')
-			flag=False
 			for i in item:
-				if float(i)>1000:
-					flag=True
 				cur.append(float(i))
-			if flag:
-				continue
 			whole.append(cur)
 	return whole
 
-def main(an,tttt):
+def main(train,test):
 
-	print("角度%d\t实验次数%d"%(an,tttt))
-
-	p1='../data/%d_%d1.txt'%(an,tttt)
-	p2='../data/%d_%d2.txt'%(an,tttt)
-	print(p1)
-	print(p2)
+	p1='../data/%d_1.txt'%(train)
+	p2='../data/%d_2.txt'%(train)
+	p3='../data/%d_1.txt'%(test)
+	p4='../data/%d_2.txt'%(test)
 
 	d1=get_data(p1)
 	d2=get_data(p2)
-	lens=min(len(d1),len(d2))
+	lens1=min(len(d1),len(d2))
 
-	d1=d1[:lens]
-	d2=d2[:lens]
-	data=[d1,d2]
+	d1=d1[:lens1]
+	d2=d2[:lens1]
+	train_data=[d1,d2]
 
-	for i in range(len(data)):
-		data[i]=get_angular_acceleration(data[i],AngelConfing.diff,[3,4,5])
+	d3=get_data(p3)
+	d4=get_data(p4)
+	lens2=min(len(d3),len(d4))
 
-	a=joint_angel(data)
+	d3=d3[:lens2]
+	d4=d4[:lens2]
+	test_data=[d3,d4]
+
+	#去掉时间戳
+	for i in range(len(train_data)):
+		for j in range(len(train_data[i])):
+			train_data[i][j]=train_data[i][j][1:]
+
+	for i in range(len(test_data)):
+		for j in range(len(test_data[i])):
+			test_data[i][j]=test_data[i][j][1:]
+
+	for i in range(len(train_data)):
+		train_data[i]=get_angular_acceleration(train_data[i],AngelConfing.diff,[3,4,5])
+
+	for i in range(len(test_data)):
+		test_data[i]=get_angular_acceleration(test_data[i],AngelConfing.diff,[3,4,5])
+
+
+	a=joint_angel(train_data,test_data)
 	a.joint_axis()
 	a.joint_pos()
 
@@ -445,11 +462,8 @@ def main(an,tttt):
 	tt=(t1+t2)/2
 	a.o1-=a.vj1*tt
 	a.o2-=a.vj2*tt
-	a.sname='../result/%d_%d.txt'%(an,tttt)
-	a.times=tttt
+	a.sname='../result/%d_%d.txt'%(train,test)
 	a.test_angel()
 
 if __name__ == '__main__':
-	for i in [0,45,90,135,180]:
-		for j in [1,2,3]:
-			main(i,j)
+	main(57,56)

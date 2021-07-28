@@ -1,4 +1,4 @@
-class AngelConfing():
+ class AngelConfing():
 	"""parameter for AngelConfing"""
 	diff = 0.01 #插值所取得时间差
 	ITER_CNT=30 #高斯牛顿迭代次数

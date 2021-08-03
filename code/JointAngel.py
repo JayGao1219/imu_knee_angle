@@ -92,6 +92,47 @@ def get_angular_acceleration(data,diff,index):
 
 	return data
 
+def MovAvg(data,index,window_size=10):
+	whole=[]
+	for i in range(len(data)):
+		cur=[]
+		for j in range(len(index)):
+			res=0.0
+			if i>=window_size and i<len(data)- window_size:
+				n=2*window_size+1
+				for k in range(1,window_size+1):
+					res+=data[i-k][index[j]]
+					res+=data[i+k][index[j]]
+				res+=data[i][index[j]]
+			elif i<window_size:
+				n=1
+				res=data[i][index[j]]
+				for k in range(1,window_size+1):
+					res+=data[i+k][index[j]]
+					n+=1
+				for k in range(i):
+					res+=data[k][index[j]]
+					n+=1
+			else:
+				n=1
+				res=data[i][index[j]]
+				for k in range(1,window_size+1):
+					res+=data[i-k][index[j]]
+					n+=1
+				for k in range(i+1,len(data)):
+					res+=data[k][index[j]]
+					n+=1
+			res/=n
+			cur.append(res)
+		whole.append(cur)
+	for i in range(len(data)):
+		for j in range(len(index)):
+			data[i][index[j]]=float('%.6f'%(whole[i][j]))
+
+	return data
+
+
+
 def c(tt):
 	return math.cos(tt)
 
@@ -149,7 +190,7 @@ def get_axis(input_data,params,output):
 
 	return output
 
-def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2):
+def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2,flag=False):
 	c=np.zeros((3,1))
 	x1=np.zeros((3,1))
 	x2=np.zeros((3,1))
@@ -168,7 +209,14 @@ def get_angel_acc(j1,j2,a1,a2,g1,g2,g_dot1,g_dot2,o1,o2):
 	q2=0.0
 	angle_acc=0.0
 
-	c=np.array([[1.0],[2.0],[3.0]])
+	c=np.array([[1.0],[0.0],[0.0]])
+
+	if flag:
+		t1=np.dot(o1.transpose(),j1)[0][0]
+		t2=np.dot(o2.transpose(),j2)[0][0]
+		tt=(t1+t2)/2
+		o1-=j1*tt
+		o2-=j2*tt
 
 	p1=np.cross(g1,o1.transpose())
 	p2=np.cross(g1,p1)
@@ -339,11 +387,13 @@ class joint_angel():
 			[c(self.params_axis[3][0])*s(self.params_axis[1][0])],\
 			[s(self.params_axis[3][0])]])
 		##做一个符号匹配
+		'''
 		flag=False
 		if self.vj1[0][0]*self.vj2[0][0]<1e-10:
 			flag=True
 		if flag:
 			self.vj1=-self.vj1
+		'''
 		print('j1,j2:')
 		print(self.vj1)
 		print(self.vj2)
@@ -380,12 +430,13 @@ class joint_angel():
 				cur={}
 				angle_gyr=SUM*self.DELTA_T
 				angle_acc_gyr=LAMBDA*angle_acc+(1- LAMBDA )*(prev_angle_acc_gyr+angle_gyr-prev_angle_gyr )
-				print("angle_acc_gyr:",angle_acc_gyr)
-				print("angle_acc:",angle_acc)
+				# print("angle_acc_gyr:",angle_acc_gyr)
+				# print("angle_acc:",angle_acc)
 				# print("angle_gyr",angle_gyr)
 				cur["angle_acc_gyr"]=angle_acc_gyr
-				cur['angle_acc']=angle_acc
+				cur['angle_acc']=-angle_acc
 				cur["angle_gyr"]=angle_gyr
+				cur["angle_gyr"]=math.degrees(angle_gyr)
 				whole.append(cur)
 			
 				
@@ -411,6 +462,13 @@ def get_data(path):
 			item=item.split('\t')
 			for i in item:
 				cur.append(float(i))
+			flag=False
+			for i in range(len(cur)-1):
+				if abs(cur[i+1])>15:
+					flag=True
+			if flag:
+				continue
+
 			whole.append(cur)
 	return whole
 
@@ -446,15 +504,31 @@ def main(train,test):
 		for j in range(len(test_data[i])):
 			test_data[i][j]=test_data[i][j][1:]
 
+
+
+	#取滑动平均
+	for i in range(len(train_data)):
+		train_data[i]=MovAvg(train_data[i],[0,1,2],16)
+
+	for i in range(len(test_data)):
+		test_data[i]=MovAvg(test_data[i],[0,1,2],16)
+
+	for i in range(len(train_data)):
+		train_data[i]=MovAvg(train_data[i],[3,4,5],AngelConfing.window_size)
+
+	for i in range(len(test_data)):
+		test_data[i]=MovAvg(test_data[i],[3,4,5],AngelConfing.window_size)
+
+	#计算角加速度
 	for i in range(len(train_data)):
 		train_data[i]=get_angular_acceleration(train_data[i],AngelConfing.diff,[3,4,5])
 
 	for i in range(len(test_data)):
 		test_data[i]=get_angular_acceleration(test_data[i],AngelConfing.diff,[3,4,5])
 
-
 	a=joint_angel(train_data,test_data)
 	a.joint_axis()
+	# a.vj2=-a.vj2
 	a.joint_pos()
 
 	t1=np.dot(a.o1.transpose(),a.vj1)[0][0]
@@ -462,6 +536,7 @@ def main(train,test):
 	tt=(t1+t2)/2
 	a.o1-=a.vj1*tt
 	a.o2-=a.vj2*tt
+	# a.vj1=-a.vj1
 	a.sname='../result/%d_%d.txt'%(train,test)
 	a.test_angel()
 
